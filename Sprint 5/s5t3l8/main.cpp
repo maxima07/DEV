@@ -48,12 +48,13 @@ bool PreprocessSupport(ifstream& in, ofstream& out, const path& in_file, const v
 
     string str;
     int str_num = 0;
-    path find_f_path;
-
-    bool is_custom_find = true;
-    bool is_std_find = true;
+    
 
     while(getline(in, str)){
+        
+        bool is_custom_find = false;
+        
+        path find_f_path;
         
         ++str_num;
 
@@ -65,18 +66,17 @@ bool PreprocessSupport(ifstream& in, ofstream& out, const path& in_file, const v
             if(find_file.is_open()){
                     
                 if(!PreprocessSupport(find_file, out, find_f_path, include_directories)){
+                    PrintError (find_f_path, in_file, str_num);
                     return false;
                 }
-                continue;
-                
-            } else {
-                PrintError (find_f_path, in_file.string(), str_num);
-                is_custom_find = false;
-                return false;
+                is_custom_find = true;
+                continue;   
             }
         }
         
-        if(regex_match(str, match, standart_lib)){
+        if(!is_custom_find || regex_match(str, match, standart_lib)){
+            bool is_std_find = false;
+            
             for(const auto& dir : include_directories){
                 find_f_path = dir / string(match[1]);
 
@@ -84,18 +84,16 @@ bool PreprocessSupport(ifstream& in, ofstream& out, const path& in_file, const v
 
                 if(find_file.is_open()){
                     if(!PreprocessSupport(find_file, out, find_f_path, include_directories)){
+                        PrintError (find_f_path, in_file, str_num);
                         return false;
                     }
+                    is_std_find = true;
                     break;
-                } else {
-                    PrintError (find_f_path, in_file.string(), str_num);
-                    is_std_find = false;
-                    return false;
                 }
             }
 
-            if(!is_custom_find && !is_std_find){
-                PrintError (find_f_path, in_file.string(), str_num);
+            if(!is_std_find){
+                PrintError (find_f_path, in_file, str_num);
                 return false;
             }
             continue; 
